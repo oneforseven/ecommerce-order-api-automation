@@ -7,6 +7,9 @@ from common.debugtalk import DebugTalk
 from common.recordlog import logs
 from conf.operateCoinfig import OperateConfig
 from common.sendrequest import SendRequest
+from common.assertions import Assertions
+
+assert_res = Assertions()
 
 class BaseRequests:
 
@@ -99,6 +102,10 @@ class BaseRequests:
                     self.extract_data(extract,res_text)
                 if extract_list is not None:
                     self.extract_data_list(extract_list,res_text)
+
+                # 处理接口断言
+                res_json = res.json()    # assert_result的response要json格式
+                assert_res.assert_result(validation,res_json,res.status_code)
 
         except Exception as e:
             logs.error(e)
