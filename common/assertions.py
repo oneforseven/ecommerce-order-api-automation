@@ -1,14 +1,16 @@
 import os.path
 import allure
 import jsonpath
+import operator
 
 from common.recordlog import logs
+from common.connection import ConnectMySql
 
 class Assertions:
     """
     接口断言模式封装，支持
     1.字符串包含
-    2.结果不相等断言
+    2.结果相等断言
     3.结果不相等断言
     4.断言接口返回值里面的任意一个数
     5.数据库断言
@@ -20,7 +22,7 @@ class Assertions:
         :param value: 预期结果，yaml文件validation关键字下的结果
         :param response: 实际结果
         :param status_code:
-        :return:
+        :return: 返回flag标识,0表示测试通过，非0则测试失败
         """
         # 断言状态标识，0->成功，其他代表失败
         flag = 0
@@ -48,11 +50,105 @@ class Assertions:
         return flag
 
 
-    def equal_assert(self):
-        """相等模式"""
+    def equal_assert(self,value,response):
+        """
+        相等断言模式
+        :param value: 预期结果，yaml文件里面的validation下的参数
+        :param response: 接口的实际返回结果
+        :return: 返回flag标识,0表示测试通过，非0则测试失败
+        """
+        flag = 0
+        res_lst = []
+        if isinstance(value,dict) and isinstance(response,dict):
+            # 处理实际结果的数据结构，保持与预期结果的数据结构一致
+            for res in response:
+                if list(value.keys())[0] != res:
+                    res_lst.append(res)
+            for rl in res_lst:
+                del response[rl]
 
-    def not_equal_assert(self):
-        """不相等断言"""
+            # 通过判断实结果的字典和预期结果的字典
+            eq_assert = operator.eq(response,value)
+            if eq_assert:
+                logs.info(f"相等断言成功：接口的实际结果为：{response}，等于预期结果：{str(value)}")
+            else:
+                flag = flag + 1
+                logs.info(f"相等断言失败：接口的实际结果为：{str(value)}，不等于预期结果：{response}")
+
+        else:
+            raise TypeError('相等断言失败--类型错误，预期结果和接口的实际响应的结果为字典类型')
+        return flag
+
+
+    def not_equal_assert(self,value,response):
+        """
+        不相等断言模式
+        :param value: 预期结果，yaml文件里面的validation下的参数
+        :param response: 接口的实际返回结果
+        :return: 返回flag标识,0表示测试通过，非0则测试失败
+        """
+        flag = 0
+        res_lst = []
+        if isinstance(value, dict) and isinstance(response, dict):
+            # 处理实际结果的数据结构，保持与预期结果的数据结构一致
+            for res in response:
+                if list(value.keys())[0] != res:
+                    res_lst.append(res)
+            for rl in res_lst:
+                del response[rl]
+
+            # 通过判断实结果的字典和预期结果的字典
+            eq_assert = operator.ne(response, value)
+            if eq_assert:
+                logs.info(f"不相等断言成功：接口的实际结果为：{response}，不等于预期结果：{str(value)}")
+            else:
+                flag = flag + 1
+                logs.info(f"不A相等断言失败：接口的实际结果为：{str(value)}，等于预期结果：{response}")
+
+        else:
+            raise TypeError('相等断言失败--类型错误，预期结果和接口的实际响应的结果为字典类型')
+        return flag
+
+    def assert_response_any(self, actual_results, expected_results):
+        """
+        断言接口响应信息中的body的任何属性值
+        :param actual_results: 接口实际响应信息
+        :param expected_results: 预期结果，在接口返回值的任意值
+        :return: 返回flag标识,0表示测试通过，非0则测试失败
+        """
+        flag = 0
+        try:
+            exp_key = list(expected_results.keys())[0]
+            if exp_key in actual_results:
+                act_value = actual_results[exp_key]
+                rv_assert = operator.eq(act_value, list(expected_results.values())[0])
+                if rv_assert:
+                    logs.info("响应结果任意值断言成功")
+                else:
+                    flag += 1
+                    logs.error("响应结果任意值断言失败")
+        except Exception as e:
+            logs.error(e)
+            raise
+        return flag
+
+
+    def assert_mysql(self,expected_sql):
+        """
+        数据库断言
+        :param expected_sql: 预期结果
+        :return: 返回flag标识,0表示测试通过，非0则测试失败
+        """
+        flag = 0
+        conn = ConnectMySql()
+        db_value = conn.query(expected_sql)
+        if db_value is not None:
+            logs.info("数据库断言成功")
+        else:
+            flag = flag + 1
+            logs.error("数据库断言失败，请检查数据库是否存在该数据！")
+        return flag
+
 
     def assert_result(self,expected,response,status_code):
         """
@@ -64,6 +160,7 @@ class Assertions:
         """
         all_flag = 0
         # 断言状态标识，0->成功，其他代表失败
+        # 下面分几种模式断言预期值判断
         try:
             for yq in expected:
                 for key,value in yq.items():
@@ -71,7 +168,14 @@ class Assertions:
                         flag = self.contains_assert(value,response,status_code)
                         all_flag = all_flag + flag
                     elif key == 'eq':
-                        self.equal_assert()
+                        flag = self.equal_assert(value,response)
+                        all_flag = all_flag + flag
+                    elif key == 'ne':
+                        flag = self.not_equal_assert(value,response)
+                        all_flag = all_flag + flag
+                    elif key == 'db':
+                        flag = self.assert_mysql(value)
+                        all_flag = all_flag + flag
 
             assert all_flag == 0
             logs.info("测试成功！")

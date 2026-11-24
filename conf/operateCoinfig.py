@@ -35,6 +35,10 @@ class OperateConfig:
         """获取接口服务器ip地址"""
         return self.get_section_for_data('api_envi',option)
 
+    def get_mysql_conf(self,option):
+        """获取接口服务器ip地址"""
+        return self.get_section_for_data('MYSQL',option)
+
 
 if __name__ == '__main__':
     oper = OperateConfig()
