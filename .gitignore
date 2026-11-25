@@ -1,0 +1,40 @@
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 虚拟环境
+.venv/
+venv/
+env/
+ENV/
+
+# 打包/构建产物
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ---------- 测试与报告产物 ----------
+# 运行 pytest / allure 生成的临时数据，不入库
+report/
+log/
+logs/
+allure-results/
+allure-report/
+.pytest_cache/
+.cache/
+
+# ---------- 编辑器 / 系统 ----------
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- 本项目辅助目录 ----------
+# Jenkins 修复脚本与插件缓存，仅本机使用
+jenkins-fix/
