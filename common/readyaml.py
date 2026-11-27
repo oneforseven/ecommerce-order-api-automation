@@ -1,20 +1,33 @@
 import yaml
 import os
+from common.recordlog import logs
 from conf.setting import FILE_PATH
-
 
 def get_testcase_yaml(file):
     """
-    获取 yaml 文件的数据
-    :param file: yaml 文件的路径
-    :return:
-    """
+        获取 yaml 文件的数据
+        :param file: yaml 文件的路径
+        :return:
+        """
+    testcase_list = []
     try:
-        with open(file,"r",encoding="utf-8") as f:
-            yaml_data = yaml.safe_load(f)
-        return yaml_data
+        with open(file, 'r', encoding='utf-8') as f:
+            data = yaml.safe_load(f)
+            if len(data) <= 1:
+                yam_data = data[0]
+                base_info = yam_data.get('baseInfo')
+                for ts in yam_data.get('testCase'):
+                    param = [base_info, ts]
+                    testcase_list.append(param)
+                return testcase_list
+            else:
+                return data
+    except UnicodeDecodeError:
+        logs.error(f"[{file}]文件编码格式错误，--尝试使用utf-8编码解码YAML文件时发生了错误，请确保你的yaml文件是UTF-8格式！")
+    except FileNotFoundError:
+        logs.error(f'[{file}]文件未找到，请检查路径是否正确')
     except Exception as e:
-        print(e)
+        logs.error(f'获取【{file}】文件数据时出现未知错误: {str(e)}')
 
 
 class ReadYamlData:
@@ -74,14 +87,3 @@ class ReadYamlData:
             extract_data = yaml.safe_load(rf)
             return extract_data[node_name]
 
-if __name__ == '__main__':
-    res = get_testcase_yaml("../testcase/Login/login.yaml")[0]
-    url = res["baseInfo"]["url"]
-    new_url = "http://127.0.0.1:8787" + url
-    method = res["baseInfo"]["method"]
-    data = res["testCase"][0]["data"]
-    print(res)
-    print(method)
-    print(url)
-    print(new_url)
-    print(data)
