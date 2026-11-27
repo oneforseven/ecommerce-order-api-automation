@@ -186,5 +186,11 @@ class Assertions:
             logs.error(f"异常信息：{e}")
             raise
 
+        if all_flag == 0:
+            logs.info("测试成功")
+            assert True
+        else:
+            logs.error("测试失败")
+            assert False
 
 

@@ -1,3 +1,4 @@
+import ast
 import json
 from json import JSONDecodeError
 
@@ -142,6 +143,11 @@ class BaseRequests:
             allure.attach(method, f'请求方法：{method}')
             header = self.replace_load(base_info['header'])
             allure.attach(str(header), f'请求头：{header}',allure.attachment_type.TEXT)
+            # 处理cookie
+            cookie = None
+            if base_info.get('cookies') is not None:
+                raw = self.replace_load(base_info['cookies'])
+                cookie = ast.literal_eval(raw) if isinstance(raw, str) and raw.lstrip().startswith(('{', '[')) else raw
 
             case_name = test_case.pop('case_name')
             allure.attach(case_name, f'测试用例名称：{case_name}',allure.attachment_type.TEXT)
@@ -184,7 +190,7 @@ class BaseRequests:
             #             files = {fk:open(fv,mode='rb')}
 
             res = self.send.run_main(name=api_name, url=url, case_name=case_name,
-                                     header=header, method=method,file=files, **test_case)
+                                     header=header, method=method,file=files,cookies=cookie, **test_case)
             res_text = res.text
             try:
                 attach_text = json.dumps(res.json(),indent=4,ensure_ascii=False)
