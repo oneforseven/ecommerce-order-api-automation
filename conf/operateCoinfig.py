@@ -32,12 +32,14 @@ class OperateConfig:
 
 
     def get_envi(self,option):
-        """获取接口服务器ip地址"""
         return self.get_section_for_data('api_envi',option)
 
     def get_mysql_conf(self,option):
-        """获取接口服务器ip地址"""
         return self.get_section_for_data('MYSQL',option)
+
+    def get_redis_conf(self,option):
+        return self.get_section_for_data('REDIS',option)
+
 
 
 if __name__ == '__main__':
